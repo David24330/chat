@@ -97,6 +97,7 @@ const why=c=>age(c)>=c.life?"de vieillesse":(c.food-RATES.food*(Date.now()-c.t)/
 const cur=c=>{const h=(Date.now()-c.t)/36e5,o={};for(const k in RATES)o[k]=clamp(c[k]-RATES[k]*h);return o};
 const avg=s=>(s.food+s.joy+s.energy+s.clean)/4;
 const col=v=>v>55?"var(--ok)":v>25?"var(--warn)":"var(--bad)";
+const fake=p=>{const k=p.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"");return k?k+"@chat-famille.app":""};
 const who=()=>user.displayName||user.email.split("@")[0];
 function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),2600)}
 function fx(e){const r=document.querySelector(".room");if(!r)return;for(let i=0;i<6;i++){const s=document.createElement("span");s.className="fx";s.textContent=e;s.style.left=25+Math.random()*50+"%";s.style.animationDelay=i*.1+"s";r.appendChild(s);setTimeout(()=>s.remove(),1700)}}
@@ -130,7 +131,7 @@ function room(c,s){const h=new Date().getHours(),n=h<7||h>=20;return '<div class
 function render(){
  const A=$("app");
  if(!auth){A.innerHTML='<div class="card msg">⚙️ Colle d’abord ta configuration Firebase dans <b>index.html</b> (voir les instructions).</div>';return}
- if(!user){A.innerHTML='<div class="card"><h2>🐱 Notre famille de chats</h2><p class="sub">Connecte-toi pour t’occuper des chats</p>'+(mode==="up"?'<input id="ps" maxlength="20" placeholder="Ton pseudo">':'')+'<input id="em" type="email" placeholder="E-mail" autocomplete="email"><input id="pw" type="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password"><button style="width:100%" data-au="go">'+(mode==="up"?"Créer mon compte":"Se connecter")+'</button><p class="sub"><a href="#" data-au="sw" style="color:var(--mut)">'+(mode==="up"?"J’ai déjà un compte":"Créer un compte")+'</a></p></div>';return}
+ if(!user){A.innerHTML='<div class="card"><h2>🐱 Notre famille de chats</h2><p class="sub">Connecte-toi pour t’occuper des chats</p>'+'<input id="ps" maxlength="20" placeholder="Ton pseudo" autocomplete="username"><input id="pw" type="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password"><button style="width:100%" data-au="go">'+(mode==="up"?"Créer mon compte":"Se connecter")+'</button><p class="sub"><a href="#" data-au="sw" style="color:var(--mut)">'+(mode==="up"?"J’ai déjà un compte":"Créer un compte")+'</a></p></div>';return}
  const all=D?D.cats:[],live=all.filter(c=>!why(c));
  if(!D||!live.length){
   const dead=all.map(c=>({n:c.name,a:Math.floor(age(c)),w:why(c)||"…"})).concat(D?D.past||[]:[]);
@@ -200,7 +201,7 @@ document.addEventListener("click",async e=>{
  if(q.au){e.preventDefault();
   if(q.au==="sw"){mode=mode==="up"?"in":"up";render()}
   else if(q.au==="out")signOut(auth);
-  else{const em=$("em").value.trim(),pw=$("pw").value;try{if(mode==="up"){const r=await createUserWithEmailAndPassword(auth,em,pw);await updateProfile(r.user,{displayName:($("ps").value.trim()||em.split("@")[0]).slice(0,20)});user=auth.currentUser;render()}else await signInWithEmailAndPassword(auth,em,pw)}catch(x){toast({"auth/invalid-credential":"E-mail ou mot de passe incorrect","auth/email-already-in-use":"Cet e-mail a déjà un compte","auth/weak-password":"Mot de passe trop court","auth/invalid-email":"E-mail invalide"}[x.code]||x.code||"Erreur")}}return}
+  else{const ps=$("ps").value.trim(),em=fake(ps),pw=$("pw").value;if(!em)return toast("Choisis un pseudo (lettres ou chiffres)");try{if(mode==="up"){const r=await createUserWithEmailAndPassword(auth,em,pw);await updateProfile(r.user,{displayName:ps.slice(0,20)});user=auth.currentUser;render()}else await signInWithEmailAndPassword(auth,em,pw)}catch(x){toast({"auth/invalid-credential":"Pseudo ou mot de passe incorrect","auth/email-already-in-use":"Ce pseudo est déjà pris","auth/weak-password":"Mot de passe trop court","auth/invalid-email":"Pseudo invalide"}[x.code]||x.code||"Erreur")}}return}
  if(!user)return;
  if(q.x!==undefined)closeModal();
  else if(q.coat){coatSel=+q.coat;render()}
